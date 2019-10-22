@@ -63,7 +63,10 @@ def split_word(text, stopwords):
 if __name__ == '__main__':
     comment_split, label,all_words_list = loadcomment_set()
     for line in range(0,10000):
-        print(comment_split[line])
+        print(label[line],' ',comment_split[line],'\n')
+        #print(comment_split[line])
+
+    print("按词频降序展示：",'\n',all_words_list)
     #print(comment_split[0])
     #print("comment_split_sorted:\n", all_words_list)
-    print("label:\n", label)
+    #print("label:\n", label)
