@@ -1,19 +1,47 @@
+import numpy as np
 import jieba
-import csv
 import pandas as pd
 
-def textProcess():
-    #切分数据集，将label和comment分开
-    trainSet=pd.read_csv('train.csv',sep='\t')
-    trainSet['comment']
-    trainSet=['label']
 
-    #对comment做分割
-    word_cut=jieba.cut(comment,cut_all=False)
-    word_list=list(word_cut)
-    data_list=[]
-    data_list.append(word_list)
-    print(data_list)
+def loadcomment_set():
+    '''
+    函数说明：加载数据
+    :return: 
+    '''
+    fr = open("train.csv", 'r', encoding='UTF-8')
+    comment_set = []
+    comment_split = []
+    label = []
+    for line in fr.readlines():
+        lineArr = line.strip().split()
+        label.append(lineArr[0])
+        comment_set.append(lineArr[1])
+    fr.close()
+    del (label[0])
+    del (comment_set[0])
+    for line in comment_set:
+        string = "/".join(jieba.cut(line, cut_all=False))
+        comment_split.append(string.split('/'))
+    return comment_split, label
 
-if __name__=='__main__':
-    textProcess()
+
+def split_word(text, stopwords):
+    word_list = jieba.cut(text)
+    start = True
+    result = ''
+    for word in word_list:
+        word = word.strip()
+        if word not in stopwords:
+            if start:
+                result = word
+                start = False
+            else:
+                result += ' ' + word
+    return result.encode('utf-8')
+
+
+if __name__ == '__main__':
+    comment_split, label = loadcomment_set()
+    print(comment_split[0])
+    print("comment_split:\n", comment_split)
+    print("label:\n", label)
