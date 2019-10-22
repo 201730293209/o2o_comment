@@ -1,11 +1,13 @@
 import numpy as np
 import jieba
 import pandas as pd
+import sklearn
+from sklearn.naive_bayes import MultinomialNB
 
-def loadcomment_list():
+def train_loadcomment_list():
     '''
-    函数说明：加载数据
-    :return: 
+    函数说明：加载训练数据
+    :return: 切分后的comment以及对应的label
     '''
     fr = open("train.csv", 'r', encoding = 'UTF-8')
     stopwords = open("stopwords_cn.txt", 'r', encoding = 'UTF-8')
@@ -20,6 +22,25 @@ def loadcomment_list():
     del(label[0])
     del(comment_list[0])
     return comment_list, label
+
+def test_loadcomment_list():
+    '''
+    函数说明：加载测试数据
+    :return: 切分后的测试comment，以及对应的id号
+    '''
+    fr = open("test_new.csv", 'r', encoding = 'UTF-8')
+    stopwords = open("stopwords_cn.txt", 'r', encoding = 'UTF-8')
+    comment_list = []
+    id = []
+    for line in fr.readlines():
+        lineArr = line.strip().split()
+        id.append(lineArr[0])
+        string = "/".join(jieba.cut(lineArr[1], cut_all = False))
+        comment_list.append(string.split("/"))
+    fr.close()
+    del(id[0])
+    del(comment_list[0])
+    return comment_list, id
 
 def sort_by_frequency(comment_list):
     '''
@@ -63,30 +84,49 @@ def delete_words(all_words_list, delete_num = 100):
             feature_words.append(all_words_list[t])
     return feature_words
 
-def createVocabList(dataSet):
-    vocabSet = set([])                      #创建一个空的不重复列表
-    for document in dataSet:
-        vocabSet = vocabSet | set(document) #取并集
-    return list(vocabSet)
+def TextFeatures(train_data_list, test_data_list, feature_words):
+    """
+    函数说明:根据feature_words将文本向量化 
+    Parameters:
+        train_data_list - 训练集
+        test_data_list - 测试集
+        feature_words - 特征集
+    Returns:
+        train_feature_list - 训练集向量化列表
+        test_feature_list - 测试集向量化列表
+    """
+    def text_features(text, feature_words):                        #出现在特征集中，则置1                                               
+        text_words = set(text)
+        features = [1 if word in text_words else 0 for word in feature_words]
+        return features
+    train_feature_list = [text_features(text, feature_words) for text in train_data_list]
+    test_feature_list = [text_features(text, feature_words) for text in test_data_list]
+    return train_feature_list, test_feature_list        
 
-def setOfWords2Vec(vocabList, inputSet):
-    returnVec = [0] * len(vocabList)                                    #创建一个其中所含元素都为0的向量
-    for word in inputSet:                                                #遍历每个词条
-        if word in vocabList:                                            #如果词条存在于词汇表中，则置1
-            returnVec[vocabList.index(word)] = 1
-        else: print("the word: %s is not in my Vocabulary!" % word)
-    return returnVec
+def TextClassifier(train_list, test_list, train_label, test_label):
+    '''
+    函数说明：文本分类器，计算精确度
+    :param train_list: 将向量化之后的训练集的已切分comment传入
+    :param test_list: 将向量化后的测试集的已切分的comment传入
+    :return: test_label: 用多重贝叶斯预测出的测试集的label值
+    '''
+    classifier = MultinomialNB().partial_fit(train_list, train_label)
+    test_label= classifier.predict(test_list)
+    #test_accuracy = classifier.score(test_list, test_label)
+    return test_label
+
 
 if __name__ == '__main__':
-    comment_list, label = loadcomment_list()
+    train_comment_list, train_label_list = train_loadcomment_list()
+    test_comment_list,test_id_list = test_loadcomment_list()
+    
     all_words_list = sort_by_frequency(comment_list)
     feature_words = delete_words(all_words_list)
-    myVocabList = createVocabList(comment_list)
-    trainMat = []
-    for comment_word in comment_list:
-        trainMat.append(setOfWords2Vec(myVocabList, comment_word))
-
+    
+    train_feature_list, test_feature_list = TextFeatures(train_comment_list, test_comment_list, feature_words)
+    test_label = TextClassifier(train_feature_list, test_feature_list, train_class_list, test_class_list)
+   
     #print("feature_words:\n", feature_words)
-    print("comment_list:\n", comment_list)
-    print("trainMat：\n",trainMat)
+    #print("comment_list:\n", comment_list)
+    #print("trainMat：\n",trainMat)
     #print("label:\n", label)
