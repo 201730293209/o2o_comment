@@ -7,8 +7,8 @@ def loadcomment_list():
     函数说明：加载数据
     :return: 
     '''
-    fr = open("C:\\Users\\lin78\\Desktop\\CCF\\train.txt", 'r', encoding = 'UTF-8')
-    stopwords = open("C:\\Users\\lin78\\Desktop\\CCF\\stopwords_cn.txt", 'r', encoding = 'UTF-8')
+    fr = open("train.csv", 'r', encoding = 'UTF-8')
+    stopwords = open("stopwords_cn.txt", 'r', encoding = 'UTF-8')
     comment_list = []
     label = []
     for line in fr.readlines():
@@ -49,7 +49,7 @@ def delete_words(all_words_list, delete_num = 100):
     :return: feature_words: 特征词，即没有被清洗的词
     '''
     #----------------加载停用词文件数据----------------------
-    fr = open("C:\\Users\\lin78\\Desktop\\CCF\\stopwords_cn.txt", 'r', encoding= 'UTF-8')
+    fr = open("stopwords_cn.txt", 'r', encoding= 'UTF-8')
     stopwords_set = set() #使用set去重，虽然没有必要
     for line in fr.readlines():
         stopword = line.strip()
@@ -63,10 +63,30 @@ def delete_words(all_words_list, delete_num = 100):
             feature_words.append(all_words_list[t])
     return feature_words
 
+def createVocabList(dataSet):
+    vocabSet = set([])                      #创建一个空的不重复列表
+    for document in dataSet:
+        vocabSet = vocabSet | set(document) #取并集
+    return list(vocabSet)
+
+def setOfWords2Vec(vocabList, inputSet):
+    returnVec = [0] * len(vocabList)                                    #创建一个其中所含元素都为0的向量
+    for word in inputSet:                                                #遍历每个词条
+        if word in vocabList:                                            #如果词条存在于词汇表中，则置1
+            returnVec[vocabList.index(word)] = 1
+        else: print("the word: %s is not in my Vocabulary!" % word)
+    return returnVec
+
 if __name__ == '__main__':
     comment_list, label = loadcomment_list()
     all_words_list = sort_by_frequency(comment_list)
     feature_words = delete_words(all_words_list)
-    print("feature_words:\n", feature_words)
+    myVocabList = createVocabList(comment_list)
+    trainMat = []
+    for comment_word in comment_list:
+        trainMat.append(setOfWords2Vec(myVocabList, comment_word))
+
+    #print("feature_words:\n", feature_words)
     print("comment_list:\n", comment_list)
-    print("label:\n", label)
+    print("trainMat：\n",trainMat)
+    #print("label:\n", label)
