@@ -1,6 +1,5 @@
-import numpy as np
 import jieba
-import pandas as pd
+
 
 def loadcomment_list():
     '''
@@ -63,10 +62,26 @@ def delete_words(all_words_list, delete_num = 100):
             feature_words.append(all_words_list[t])
     return feature_words
 
+
+def create_words_vec(comment_list, feature_words):
+    '''
+    函数说明：生成词条（句子）向量
+    :param comment_list: 评论列表
+    :param feature_words: 特征词
+    :return: words_vec: 词条向量，采用one-hot热编码方式
+    '''
+    words_vec = []   #词条向量
+    for comment in comment_list:  #取出每条评论
+        temp_vec = [0] * len(feature_words)    #生成和feature_words相同长度的词向量
+        for word in comment:  #取出评论中的每个词
+            if word in feature_words:   #如果该词在features_words（词汇表）中出现
+                temp_vec[feature_words.index(word)] = 1    #则在对应位置记1
+        words_vec.append(temp_vec)
+    return words_vec
+
 if __name__ == '__main__':
     comment_list, label = loadcomment_list()
     all_words_list = sort_by_frequency(comment_list)
     feature_words = delete_words(all_words_list)
-    print("feature_words:\n", feature_words)
-    print("comment_list:\n", comment_list)
+    words_vec = create_words_vec(comment_list, feature_words)
     print("label:\n", label)
