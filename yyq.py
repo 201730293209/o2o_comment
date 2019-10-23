@@ -72,7 +72,7 @@ def delete_words(all_words_list, delete_num=100):
     :param delete_num: 删除的高频词数目，默认100，需要通过观察确定最好的数目
     :return: feature_words: 特征词，即没有被清洗的词
     '''
-    # ----------------加载停用词文件数据----------------------
+    # ----------------将停用词存入stopwords_set中----------------------
     fr = open("stopwords_cn.txt", 'r', encoding='UTF-8')
     stopwords_set = set()  # 使用set去重，虽然没有必要
     for line in fr.readlines():
@@ -100,7 +100,6 @@ def TextFeatures(train_data_list, test_data_list, feature_words):
         train_feature_list - 训练集向量化列表
         test_feature_list - 测试集向量化列表
     """
-
     def text_features(text, feature_words):  # 出现在特征集中，则置1
         text_words = set(text)
         features = [1 if word in text_words else 0 for word in feature_words]
@@ -133,15 +132,17 @@ if __name__ == '__main__':
     train_comment_list = train_comment_list[0 : 5000]
     train_label_list = train_label_list[0 : 5000]
 
-
+    #----------词频排序与特征词选择------------#
     all_words_list = sort_by_frequency(train_comment_list)
     feature_words = delete_words(all_words_list)
-
+    
+    # ----------将训练集和测试集向量化------------#
     train_feature_list, test_feature_list = TextFeatures(train_comment_list, test_comment_list, feature_words)
+
+    # ----------运用贝叶斯将测试集的label值预测出来------------#
     test_label = TextClassifier(train_feature_list, test_feature_list,  train_label_list, train_label_list)
+
+    # ----------将预测的到的label与对应的ID打入新的csv文件------------#
     res=pd.DataFrame({'id':test_id_list,'label':test_label})
     res.to_csv('result1.csv',index=0)
-    # print("feature_words:\n", feature_words)
-    # print("comment_list:\n", comment_list)
-    # print("trainMat：\n",trainMat)
-    # print("label:\n", label)
+
