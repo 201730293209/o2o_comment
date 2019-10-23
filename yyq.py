@@ -108,28 +108,8 @@ def create_words_vec(comment_list, feature_words):
         words_vec.append(temp_vec)
     return words_vec
 
-def TextFeatures(train_data_list, test_data_list, feature_words):
-    """
-    函数说明:根据feature_words将文本向量化 
-    Parameters:
-        train_data_list - 训练集
-        test_data_list - 测试集
-        feature_words - 特征集
-    Returns:
-        train_feature_list - 训练集向量化列表
-        test_feature_list - 测试集向量化列表
-    """
-    def text_features(text, feature_words):  # 出现在特征集中，则置1
-        text_words = set(text)
-        features = [1 if word in text_words else 0 for word in feature_words]
-        return features
 
-    train_feature_list = [text_features(text, feature_words) for text in train_data_list]
-    test_feature_list = [text_features(text, feature_words) for text in test_data_list]
-    return train_feature_list, test_feature_list
-
-
-def TextClassifier(train_list, test_list, train_label, test_label):
+def TextClassifier(train_list, test_list, train_label):
     '''
     函数说明：文本分类器，计算精确度
     :parameters：
@@ -138,10 +118,10 @@ def TextClassifier(train_list, test_list, train_label, test_label):
     :return:
         test_label: 用多重贝叶斯预测出的测试集的label值
     '''
-    classifier = MultinomialNB().partial_fit(train_list, train_label, classes = np.array([0, 1]))
+    classifier = MultinomialNB().fit(train_list, train_label)
     test_label = classifier.predict(test_list)
-    # test_accuracy = classifier.score(test_list, test_label)
-    return test_label
+    train_accuracy = classifier.score(train_list, train_label)
+    return test_label,train_accuracy
 
 
 if __name__ == '__main__':
@@ -160,7 +140,7 @@ if __name__ == '__main__':
     test_feature_list=create_words_vec(test_comment_list,feature_words)
 
     # ----------运用贝叶斯将测试集的label值预测出来------------#
-    test_label = TextClassifier(train_feature_list, test_feature_list,  train_label_list, train_label_list)
+    test_label,train_accuracy = TextClassifier(train_feature_list, test_feature_list,  train_label_list)
 
     # ----------将预测的到的label与对应的ID打入新的csv文件------------#
     res=pd.DataFrame({'id':test_id_list,'label':test_label})
