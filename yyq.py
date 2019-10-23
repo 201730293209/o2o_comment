@@ -3,7 +3,7 @@ import jieba
 import pandas as pd
 import sklearn
 from sklearn.naive_bayes import MultinomialNB
-
+import matplotlib.pyplot as plt
 
 def train_loadcomment_list():
     '''
@@ -66,7 +66,7 @@ def sort_by_frequency(comment_list):
     return all_words_list
 
 
-def delete_words(all_words_list, delete_num=100):
+def delete_words(all_words_list, delete_num):
     '''
     函数说明：文本清洗，去除高频词，数字，停用词
     :param all_words_list: 所有词的列表
@@ -122,7 +122,9 @@ def TextClassifier(train_list, test_list, train_label):
     classifier = MultinomialNB().fit(train_list, train_label)
     test_label = classifier.predict(test_list)
     train_accuracy = classifier.score(train_list, train_label)
-    return test_label,train_accuracy
+
+    #return test_label,train_accuracy,test_accuracy
+    return train_accuracy
 
 
 if __name__ == '__main__':
@@ -131,17 +133,33 @@ if __name__ == '__main__':
 
     #----------词频排序与特征词选择------------#
     all_words_list = sort_by_frequency(train_comment_list)
-    feature_words = delete_words(all_words_list)
+    #feature_words = delete_words(all_words_list)
 
     # ----------将训练集和测试集向量化------------#
     #train_feature_list, test_feature_list = TextFeatures(train_comment_list, test_comment_list, feature_words)
-    train_feature_list=create_words_vec(train_comment_list,feature_words)
-    test_feature_list=create_words_vec(test_comment_list,feature_words)
+    #train_feature_list=create_words_vec(train_comment_list,feature_words)
+    #test_feature_list=create_words_vec(test_comment_list,feature_words)
 
     # ----------运用贝叶斯将测试集的label值预测出来------------#
-    test_label,train_accuracy = TextClassifier(train_feature_list, test_feature_list,  train_label_list)
+    #test_label,train_accuracy,test_accuracy= TextClassifier(train_feature_list, test_feature_list,  train_label_list)
 
     # ----------将预测的到的label与对应的ID打入新的csv文件------------#
-    res=pd.DataFrame({'id':test_id_list,'label':test_label,'comment':test_comment_list})
-    res.to_csv('result1.csv',index=0)
+    #res=pd.DataFrame({'id':test_id_list,'label':test_label})
+    #res.to_csv('result1.csv',index=0)
+
+    train_accuracy_list = []
+    deleteNs = range(0, 1000, 20)  # 0 20 40 60 ... 980
+    for deleteN in deleteNs:
+        feature_words = delete_words(all_words_list, deleteN)
+        train_feature_list = create_words_vec(train_comment_list, feature_words)
+        test_feature_list=create_words_vec(test_comment_list,feature_words)
+        train_accuracy = TextClassifier(train_feature_list, test_feature_list, train_label_list)
+        train_accuracy_list.append(train_accuracy)
+
+    plt.figure()
+    plt.plot(deleteNs, train_accuracy_list)
+    plt.title('Relationship of deleteNs and test_accuracy')
+    plt.xlabel('deleteNs')
+    plt.ylabel('test_accuracy')
+    plt.show()
 
