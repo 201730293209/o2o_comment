@@ -4,7 +4,6 @@ import pandas as pd
 import sklearn
 from sklearn.naive_bayes import MultinomialNB
 
-
 def train_loadcomment_list():
     '''
     函数说明：加载训练数据
@@ -123,6 +122,10 @@ def TextClassifier(train_list, test_list, train_label):
     test_label = classifier.predict(test_list)
     train_accuracy = classifier.score(train_list, train_label)
     return test_label,train_accuracy
+
+
+def svm(train_list,test_list,train_label):
+    return 0
 
 
 if __name__ == '__main__':
