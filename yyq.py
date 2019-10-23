@@ -33,6 +33,7 @@ def test_loadcomment_list():
     fr = open("test_new.csv", 'r', encoding='UTF-8')
     stopwords = open("stopwords_cn.txt", 'r', encoding='UTF-8')
     comment_list = []
+
     id = []
     for line in fr.readlines():
         lineArr = line.strip().split(',')
@@ -42,7 +43,7 @@ def test_loadcomment_list():
     fr.close()
     del (id[0])
     del (comment_list[0])
-    return comment_list, id
+    return comment_list, id,
 
 
 def sort_by_frequency(comment_list):
@@ -127,8 +128,6 @@ def TextClassifier(train_list, test_list, train_label):
 if __name__ == '__main__':
     train_comment_list, train_label_list = train_loadcomment_list()
     test_comment_list, test_id_list = test_loadcomment_list()
-    train_comment_list = train_comment_list[0 : 5000]
-    train_label_list = train_label_list[0 : 5000]
 
     #----------词频排序与特征词选择------------#
     all_words_list = sort_by_frequency(train_comment_list)
@@ -143,6 +142,6 @@ if __name__ == '__main__':
     test_label,train_accuracy = TextClassifier(train_feature_list, test_feature_list,  train_label_list)
 
     # ----------将预测的到的label与对应的ID打入新的csv文件------------#
-    res=pd.DataFrame({'id':test_id_list,'label':test_label})
+    res=pd.DataFrame({'id':test_id_list,'label':test_label,'comment':test_comment_list})
     res.to_csv('result1.csv',index=0)
 
