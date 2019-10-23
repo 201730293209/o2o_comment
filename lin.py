@@ -1,4 +1,9 @@
 import jieba
+from sklearn.naive_bayes import MultinomialNB
+import numpy as np
+import pandas as pd
+import csv
+import codecs
 
 
 def loadcomment_list():
@@ -79,9 +84,41 @@ def create_words_vec(comment_list, feature_words):
         words_vec.append(temp_vec)
     return words_vec
 
+
+def classify_and_plot(train_words_vec, test_words_vec, train_label, test_label):
+    '''
+    函数说明：进行分类
+    :param train_words_vec: 训练集词条向量, array类型
+    :param test_words_vec: 测试集词条向量
+    :param train_label: 训练集标签向量， array类型
+    :param test_label: 测试集标签向量
+    :return: 
+    '''
+    '''
+    classifier = MultinomialNB()
+    row = len(train_words_vec)
+    classifier.partial_fit(train_words_vec[0: int(row / 2)],
+                           train_label[0: int(row / 2)], classes = np.array([0, 1]))
+    # classifier.partial_fit(train_words_vec[int(row / 2): row],
+    #                      train_label[int(row / 2): row])
+    test_accuracy = classifier.score(test_words_vec, test_label)
+    '''
+    classifier = MultinomialNB().fit(train_words_vec, train_label)
+    test_accuracy = classifier.score(test_words_vec, test_label)
+
+    return test_accuracy
+
+
 if __name__ == '__main__':
     comment_list, label = loadcomment_list()
     all_words_list = sort_by_frequency(comment_list)
-    feature_words = delete_words(all_words_list)
+    feature_words = delete_words(all_words_list, delete_num= 1000)
     words_vec = create_words_vec(comment_list, feature_words)
-    print("label:\n", label)
+
+    train_words_vec = words_vec[0 : 7000]
+    train_label = label[0 : 7000]
+    test_words_vec = words_vec[7000 : len(words_vec)]
+    test_label = label[7000 : len(words_vec)]
+    test_accuracy = classify_and_plot(train_words_vec, test_words_vec, train_label, test_label)
+    print("test_accuracy:\n", test_accuracy)
+
