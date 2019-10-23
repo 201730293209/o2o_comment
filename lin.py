@@ -1,22 +1,21 @@
 import jieba
 from sklearn.naive_bayes import MultinomialNB
-import numpy as np
 import pandas as pd
-import csv
-import codecs
 
 
-def loadcomment_list():
+def loadcomment_list(filename):
     '''
     函数说明：加载数据
     :return: 
     '''
-    fr = open("C:\\Users\\lin78\\Desktop\\CCF\\train.txt", 'r', encoding = 'UTF-8')
-    stopwords = open("C:\\Users\\lin78\\Desktop\\CCF\\stopwords_cn.txt", 'r', encoding = 'UTF-8')
+    fr = open(filename, 'r', encoding = 'UTF-8')
     comment_list = []
     label = []
+    delimiter = '\t'
+    if filename == 'test_new.csv':
+        delimiter = ','
     for line in fr.readlines():
-        lineArr = line.strip().split()
+        lineArr = line.strip().split(delimiter)
         label.append(lineArr[0])
         string = "/".join(jieba.cut(lineArr[1], cut_all = False))
         comment_list.append(string.split("/"))
@@ -53,7 +52,7 @@ def delete_words(all_words_list, delete_num = 100):
     :return: feature_words: 特征词，即没有被清洗的词
     '''
     #----------------加载停用词文件数据----------------------
-    fr = open("C:\\Users\\lin78\\Desktop\\CCF\\stopwords_cn.txt", 'r', encoding= 'UTF-8')
+    fr = open("stopwords_cn.txt", 'r', encoding= 'UTF-8')
     stopwords_set = set() #使用set去重，虽然没有必要
     for line in fr.readlines():
         stopword = line.strip()
@@ -85,40 +84,52 @@ def create_words_vec(comment_list, feature_words):
     return words_vec
 
 
-def classify_and_plot(train_words_vec, test_words_vec, train_label, test_label):
+def navie_bayes(train_words_vec, test_words_vec, train_label, test_label = None):
     '''
-    函数说明：进行分类
-    :param train_words_vec: 训练集词条向量, array类型
+    函数说明：使用多项式朴素贝叶斯进行测试准确率或预测
+    :param train_words_vec: 训练集词条向量
     :param test_words_vec: 测试集词条向量
-    :param train_label: 训练集标签向量， array类型
-    :param test_label: 测试集标签向量
-    :return: 
-    '''
-    '''
-    classifier = MultinomialNB()
-    row = len(train_words_vec)
-    classifier.partial_fit(train_words_vec[0: int(row / 2)],
-                           train_label[0: int(row / 2)], classes = np.array([0, 1]))
-    # classifier.partial_fit(train_words_vec[int(row / 2): row],
-    #                      train_label[int(row / 2): row])
-    test_accuracy = classifier.score(test_words_vec, test_label)
+    :param train_label: 训练集标签向量
+    :param test_label: 测试集标签向量，不传入时为预测
+    :param: is_train: 是否为测试，否则是预测
+    :return:  返回两个其中之一 test_accuracy：测试的准确率
+                               test_label: 预测的标签
     '''
     classifier = MultinomialNB().fit(train_words_vec, train_label)
-    test_accuracy = classifier.score(test_words_vec, test_label)
+    if(test_label != None): #测试准确率
+        test_accuracy = classifier.score(test_words_vec, test_label)
+        return test_accuracy
+    else:   #
+        test_label = classifier.predict(test_words_vec)
+        return test_label
+    return test_label
 
-    return test_accuracy
-
-
+  
 if __name__ == '__main__':
-    comment_list, label = loadcomment_list()
-    all_words_list = sort_by_frequency(comment_list)
-    feature_words = delete_words(all_words_list, delete_num= 1000)
-    words_vec = create_words_vec(comment_list, feature_words)
+    #-----------------数据预处理----------------
+    #训练集
+    comment_list, label = loadcomment_list("train.csv")  #加载数据集
+    all_words_list = sort_by_frequency(comment_list)  #生成词汇表
+    feature_words = delete_words(all_words_list, delete_num= 100) #清洗词汇表
+    words_vec = create_words_vec(comment_list, feature_words)  #词条向量
+    #预测验证集
+    predict_comment_list, id = loadcomment_list("test_new.csv")  #加载需要预测的评论
+    predict_words_vec = create_words_vec(predict_comment_list, feature_words)
 
-    train_words_vec = words_vec[0 : 7000]
-    train_label = label[0 : 7000]
-    test_words_vec = words_vec[7000 : len(words_vec)]
-    test_label = label[7000 : len(words_vec)]
-    test_accuracy = classify_and_plot(train_words_vec, test_words_vec, train_label, test_label)
-    print("test_accuracy:\n", test_accuracy)
+    #----------------测试准确率------------------------
+    '''
+    split_num = 8000
+    train_words_vec = words_vec[0 : split_num]
+    train_label = label[0 : split_num]
+    test_words_vec = words_vec[split_num : len(words_vec)]
+    test_label = label[split_num : len(words_vec)]
+    test_accuracy = navie_bayes(train_words_vec, test_words_vec, train_label, test_label)
+    '''
+    #---------------------进行预测并输出文件-------------------------
+    predict_label = navie_bayes(words_vec, predict_words_vec, label)
+    result = pd.DataFrame({'id': id,
+                           'label': predict_label})
+    result.to_csv('reuslt_lin_1.csv', index = 0)
+    print("ok!")
+
 
