@@ -145,6 +145,6 @@ if __name__ == '__main__':
     test_label,train_accuracy = TextClassifier(train_feature_list, test_feature_list,  train_label_list)
 
     # ----------将预测的到的label与对应的ID打入新的csv文件------------#
-    res=pd.DataFrame({'id':test_id_list,'label':test_label,'comment':test_comment_list})
-    res.to_csv('result1.csv',index=0)
+    #res=pd.DataFrame({'id':test_id_list,'label':test_label,'comment':test_comment_list})
+    #res.to_csv('result1.csv',index=0)
 
