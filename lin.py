@@ -1,7 +1,9 @@
 import jieba
 from sklearn.naive_bayes import MultinomialNB
 import pandas as pd
-
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.svm import SVC
+import sklearn
 
 def loadcomment_list(filename):
     '''
@@ -84,9 +86,11 @@ def create_words_vec(comment_list, feature_words):
     return words_vec
 
 
-def navie_bayes(train_words_vec, test_words_vec, train_label, test_label = None):
+
+def test_or_predict(classifier, train_words_vec, test_words_vec, train_label, test_label = None):
     '''
-    函数说明：使用多项式朴素贝叶斯进行测试准确率或预测
+    函数说明：传入分类器进行测试或预测
+    :param classifier: sklearn的分类器
     :param train_words_vec: 训练集词条向量
     :param test_words_vec: 测试集词条向量
     :param train_label: 训练集标签向量
@@ -95,16 +99,15 @@ def navie_bayes(train_words_vec, test_words_vec, train_label, test_label = None)
     :return:  返回两个其中之一 test_accuracy：测试的准确率
                                test_label: 预测的标签
     '''
-    classifier = MultinomialNB().fit(train_words_vec, train_label)
+    classifier.fit(train_words_vec, train_label)
     if(test_label != None): #测试准确率
         test_accuracy = classifier.score(test_words_vec, test_label)
         return test_accuracy
-    else:   #
+    else: #预测
         test_label = classifier.predict(test_words_vec)
         return test_label
-    return test_label
 
-  
+
 if __name__ == '__main__':
     #-----------------数据预处理----------------
     #训练集
@@ -116,20 +119,36 @@ if __name__ == '__main__':
     predict_comment_list, id = loadcomment_list("test_new.csv")  #加载需要预测的评论
     predict_words_vec = create_words_vec(predict_comment_list, feature_words)
 
-    #----------------测试准确率------------------------
-    '''
-    split_num = 8000
-    train_words_vec = words_vec[0 : split_num]
-    train_label = label[0 : split_num]
-    test_words_vec = words_vec[split_num : len(words_vec)]
-    test_label = label[split_num : len(words_vec)]
-    test_accuracy = navie_bayes(train_words_vec, test_words_vec, train_label, test_label)
-    '''
-    #---------------------进行预测并输出文件-------------------------
-    predict_label = navie_bayes(words_vec, predict_words_vec, label)
-    result = pd.DataFrame({'id': id,
-                           'label': predict_label})
-    result.to_csv('reuslt_lin_1.csv', index = 0)
-    print("ok!")
+    #--------------------各种分类器------------------------------
+    #classifier = MultinomialNB()   #朴素贝叶斯多项式分类器
+    #AdaBoost集成
+    #classifier = AdaBoostClassifier(base_estimator = MultinomialNB(),
+    #                                         n_estimators = 50, learning_rate = 1.0)
+    classifier = sklearn.svm.LinearSVC(C = 1.0, max_iter = 1000)
+
+    #--------------------------------------------------------
+    test_flag = False   #True时进行测试，Flase时进行预测
+    if(test_flag):
+        # ----------------测试准确率------------------------
+        split_num = 8000
+        train_words_vec = words_vec[0: split_num]
+        train_label = label[0: split_num]
+        test_words_vec = words_vec[split_num: len(words_vec)]
+        test_label = label[split_num: len(words_vec)]
+        test_accuracy = test_or_predict(classifier, train_words_vec, test_words_vec, train_label, test_label)
+        print("test_accuracy:\n", test_accuracy)
+    else:
+        # ---------------------进行预测并输出文件-------------------------
+        predict_label = test_or_predict(classifier, words_vec, predict_words_vec, label)
+        result = pd.DataFrame({'id': id,
+                               'label': predict_label})
+        result.to_csv('reuslt_lin_svm_linearSVC.csv', index = 0)
+        print("ok!")
+
+
+
+
+
+
 
 
