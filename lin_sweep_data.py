@@ -4,12 +4,33 @@ import pandas as pd
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
 import sklearn
+import pandas as pd
 
 def loadcomment_list(filename):
     '''
     函数说明：加载数据
     :return: 
     '''
+    jieba.suggest_freq('不好吃', True)
+    jieba.suggest_freq('难吃', True)
+    jieba.suggest_freq('可以', True)
+    jieba.suggest_freq('很好', True)
+    jieba.suggest_freq('怎么吃', True)
+    jieba.suggest_freq('分量足', True)
+    jieba.suggest_freq('很足', True)
+    jieba.suggest_freq('还行', True)
+    jieba.suggest_freq('臭的', True)
+    jieba.suggest_freq('不熟', True)
+    jieba.suggest_freq('馊的', True)
+    jieba.suggest_freq('沙子', True)
+    jieba.suggest_freq('不满意', True)
+    jieba.suggest_freq('还可以', True)
+    jieba.suggest_freq('不新鲜', True)
+    jieba.suggest_freq('臭了', True)
+    jieba.suggest_freq('馊了', True)
+    jieba.suggest_freq('死人', True)
+    jieba.suggest_freq('要死人', True)
+    jieba.suggest_freq('地沟油', True)
     fr = open(filename, 'r', encoding = 'UTF-8')
     comment_list = []
     label = []
@@ -46,11 +67,10 @@ def sort_by_frequency(comment_list):
     return all_words_list
 
 
-def delete_words(all_words_list, delete_num = 100):
+def delete_words(all_words_list):
     '''
     函数说明：文本清洗，去除高频词，数字，停用词
     :param all_words_list: 所有词的列表
-    :param delete_num: 删除的高频词数目，默认100，需要通过观察确定最好的数目
     :return: feature_words: 特征词，即没有被清洗的词
     '''
     #----------------加载停用词文件数据----------------------
@@ -62,9 +82,10 @@ def delete_words(all_words_list, delete_num = 100):
             stopwords_set.add(stopword)
     #-------------------------------------------------------
     feature_words = []  #特征词，即有效的词
-    for t in range(delete_num, len(all_words_list), 1):
+    for t in range(0, len(all_words_list), 1):
         # 如果这个词不是数字，并且不是停用词，且单词长度大于1小于5，那么这个词就可以作为特征词
-        if not all_words_list[t].isdigit() and all_words_list[t] not in stopwords_set and 1 < len(all_words_list[t]) < 5:
+        if not all_words_list[t].isdigit() and all_words_list[t] not in stopwords_set and\
+                (1 < len(all_words_list[t]) < 5 or all_words_list[t] in ['虫', '馊', '臭', '脏', '生']):
             feature_words.append(all_words_list[t])
     return feature_words
 
@@ -78,10 +99,10 @@ def create_words_vec(comment_list, feature_words):
     '''
     words_vec = []   #词条向量
     for comment in comment_list:  #取出每条评论
-        temp_vec = [0] * len(feature_words)    #生成和feature_words相同长度的词向量
+        temp_vec = [0] * len(feature_words)    #生成和feature_words相同长度的词向量,进行+1平滑
         for word in comment:  #取出评论中的每个词
             if word in feature_words:   #如果该词在features_words（词汇表）中出现
-                temp_vec[feature_words.index(word)] = 1    #则在对应位置记1
+                temp_vec[feature_words.index(word)] = 1    #则在对应位置+1
         words_vec.append(temp_vec)
     return words_vec
 
@@ -109,22 +130,70 @@ def test_or_predict(classifier, train_words_vec, test_words_vec, train_label, te
 
 
 if __name__ == '__main__':
+
+    #----------------使用结巴分词和文本清洗并生成文件-------------------
+    comment_list, label = loadcomment_list("train.csv")
+    all_words_list = sort_by_frequency(comment_list)
+    feature_words = delete_words(all_words_list)
+    sweep_comment_list = []
+    for comment in comment_list:
+        string = ""
+        first_flag = True
+        for word in comment:
+            if word in feature_words:
+                if(first_flag):
+                    string += word
+                    first_flag = False
+                else:
+                    string += " "
+                    string += word
+        sweep_comment_list.append(string.format())
+
+
+
+    predict_comment_list, id = loadcomment_list("test_new.csv")
+    train_data_frame = pd.DataFrame({'label': label, 'comment': sweep_comment_list})
+    sweep_test_comment_list = []
+    for comment in predict_comment_list:
+        string = ''
+        first_flag = True
+        for word in comment:
+            if word in feature_words:
+                if (first_flag):
+                    string += word
+                    first_flag = False
+                else:
+                    string += " "
+                    string += word
+        sweep_test_comment_list.append(string.format())
+
+    sweep_train_comment = pd.DataFrame({'label': label, 'comment': sweep_comment_list})
+    sweep_train_comment.to_csv('sweep_train.csv')
+
+    sweep_test_comment = pd.DataFrame({'id': id, 'comment': sweep_test_comment_list})
+    sweep_test_comment.to_csv('sweep_test_new.csv')
+    #--------------------------------------------------------------------
+
+
+
+    '''
     #-----------------数据预处理----------------
     #训练集
     comment_list, label = loadcomment_list("train.csv")  #加载数据集
     all_words_list = sort_by_frequency(comment_list)  #生成词汇表
-    feature_words = delete_words(all_words_list, delete_num= 100) #清洗词汇表
+    feature_words = delete_words(all_words_list) #清洗词汇表
     words_vec = create_words_vec(comment_list, feature_words)  #词条向量
     #预测验证集
     predict_comment_list, id = loadcomment_list("test_new.csv")  #加载需要预测的评论
     predict_words_vec = create_words_vec(predict_comment_list, feature_words)
+    
 
     #--------------------各种分类器------------------------------
-    #classifier = MultinomialNB()   #朴素贝叶斯多项式分类器
+    classifier = MultinomialNB()   #朴素贝叶斯多项式分类器
     #AdaBoost集成
     #classifier = AdaBoostClassifier(base_estimator = MultinomialNB(),
     #                                         n_estimators = 50, learning_rate = 1.0)
-    classifier = sklearn.svm.LinearSVC(C = 1.0, max_iter = 1000)
+    #classifier = sklearn.svm.LinearSVC(C = 1.0, max_iter = 1000)
 
     #--------------------------------------------------------
     test_flag = False   #True时进行测试，Flase时进行预测
@@ -142,8 +211,11 @@ if __name__ == '__main__':
         predict_label = test_or_predict(classifier, words_vec, predict_words_vec, label)
         result = pd.DataFrame({'id': id,
                                'label': predict_label})
-        result.to_csv('reuslt_lin_svm_linearSVC.csv', index = 0)
+        result.to_csv('reuslt_lin_sweep_navie_bayes.csv', index = 0)
         print("ok!")
+    '''
+
+
 
 
 
